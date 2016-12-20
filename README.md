@@ -1,6 +1,7 @@
 # comboGrid For datatables
 参考了:[datatimepicker.js](http://xdsoft.net/jqplugins/datetimepicker/)
 使用方法：
+```
 /****主表单元格单击****/
     $('#jjg-table > tbody ').on('click','td',function (e) {
       var tr = $(this).closest('tr');
@@ -40,3 +41,4 @@
       });
       //return false;//停止函数执行-***重要，否则会
     });
+```
