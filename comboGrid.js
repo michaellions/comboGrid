@@ -1,45 +1,78 @@
 /**
- * @preserve jQuery combotable plugin v0.0.2
+ * @preserve jQuery combotable plugin v0.2.0
  * @homepage
  * (c) 2016, micros.
  */
 (function( $ ) {
 	'use strict';
 	var default_options  = {
-		maintableid:'',//主表id-例:maintableid:'#micros-table',
-		maintablerowindex:-1,//主表当前行索引
-		maintablecols:[],//主表列名称-例:maintablecols:['sgjmax','sgjmin','xgjmax','xgjmin'],
-		curtablecols:[],//当前combogrid表格列名称-例:curtablecols:['sgjmax','sgjmin','xgjmax','xgjmin'] 注意:需与主表列名称数量一致。
+		gridtype:"table",
+		/*gridtype-grid模式
+		* 默认：table-表格模式
+		* 其他：pic-图片模式
+		*           desc-描述模式
+		* */
+	maintable:function () {},//关联主表table名-例:maintableid:xshztable,用此function () {}方法可获得外部的实例为参数
+	maintablerowindex:-1,//主表当前行索引
+	maintablecols:[],//主表列名称-例:maintablecols:['sgjmax','sgjmin','xgjmax','xgjmin'],如果只有一列数据要填入主表，请将此属性设置为空即maintablecols:[]
+	curtablecols:[],//当前combogrid表格列名称-例:curtablecols:['sgjmax','sgjmin','xgjmax','xgjmin'] 注意:需与主表列名称数量一致。将当前表格列中的数据传到主表对应列中
+        inputcol:"",//主表当前input要得到值的列name，请注意inputcol中的值不能出现在maintablecols和curtablecols中
         url:'',
+	//ajax:{},
+	data:[],
         processing:false,
         columns:[],
+	columnDefs:[],
+        createdRow: function ( row, data, index ) {},//创建行回调-设置行的style
         serverSide:true,
         ordering:false,
         aLengthMenu: [[-1], ["全部"]],
-		scrollY: 200,//同时开启垂直(表格高度)和水平滚动条
-		scrollX: "100%",
-		sScrollXInner: "100%",
-		scrollCollapse:true,
-		width:224,
-		language:{},
-        dom:'',
-		tableid:'micros',//当前表格id-应用时可不设置
-		value:'',
-		closeOnDataSelect:0,
-		closeOnWithoutClick:true,
-		tablepicker:true,
-		opened:false,
-		inline:false,
-		onShow:function() {},
-		onClose:function() {},
-		withoutCopyright:true,
-		inverseButton:false,
-		scrollInput:true,
-		validateOnBlur:true,
-		style:'',
-		id:'',
-		className:'',
-	};
+	scrollY: 200,//同时开启垂直(表格高度)和水平滚动条
+	scrollX: "100%",
+	sScrollXInner: "100%",
+	scrollCollapse:true,
+	width:224,
+	language:{
+		"sProcessing": "处理中,请稍后...",
+		"sLengthMenu": "&nbsp;显示&nbsp;_MENU_",
+		"sZeroRecords": "没有匹配结果",
+		"sInfo": "显示_START_至_END_条,共_TOTAL_条记录&nbsp;",
+		"sInfoEmpty": "显示0至0,共0条记录",
+		"sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+		"sInfoPostFix": "",
+		"sSearch": "搜索:",
+		"sUrl": "",
+		"sEmptyTable": "表中数据为空",
+		"sLoadingRecords": "载入中,请稍后...",
+		"sInfoThousands": ",",//千分位符号
+		"oPaginate": {
+			"sFirst": "<i class='yong-icon fa fa-angle-double-left bigger-140'></i>",
+			"sPrevious": "<i class='yong-icon fa fa-angle-left bigger-140'></i>",
+			"sNext": "<i class='yong-icon fa fa-angle-right bigger-140'></i>",
+			"sLast": "<i class='yong-icon fa fa-angle-double-right bigger-140'></i>",
+			"sJump":"跳转"},
+		"oAria": {
+			"sSortAscending": ": 以升序排列此列",
+			"sSortDescending": ": 以降序排列此列"}
+	},
+        dom:'t',
+	tableid:'micros',//当前表格id-应用时可不设置
+	value:'',
+	closeOnDataSelect:0,
+	closeOnWithoutClick:true,
+	tablepicker:true,
+	opened:false,
+	inline:false,
+	onShow:function() {},
+	onClose:function() {},
+	withoutCopyright:true,
+	inverseButton:false,
+	scrollInput:true,
+	validateOnBlur:true,
+	style:'',
+	id:'',
+	className:''
+ };
 	// fix for ie8
 	if ( !Array.prototype.indexOf ) {
 		Array.prototype.indexOf = function(obj, start) {
@@ -48,7 +81,7 @@
 			 }
 			 return -1;
 		}
-	};
+	}
 	$.fn.comboGrid = function( opt ) {
 		var KEY0 = 48,
 			KEY9 = 57,
@@ -111,41 +144,74 @@
 
 				// base handler - generating a table and tablepicker
 				combotable.on('mchange.micros',function( event ) {
-						//generate table
-						var tablehtml ='<table id="'+options.tableid+'" class="table table-striped table-bordered table-hover" style="table-layout:fixed" cellspacing="0"><thead>';
-						tablehtml+='<tr></tr></thead>';
-						tablehtml+='<tbody></tbody></table>';
-						tablepicker.html(tablehtml);
-                        $('#'+options.tableid).DataTable({
-                            'ajax':{"url":options.url},
-                            "processing":options.processing,
-                            "columns":options.columns,
-                            "serverSide": options.serverSide,
-                            "ordering": options.ordering,
-                            "aLengthMenu":options.aLengthMenu,
-							"scrollY": options.scrollY,//同时开启垂直(表格高度)和水平滚动条
-							"scrollX":options.scrollX,
-							"sScrollXInner":options.sScrollXInner,
-							"scrollCollapse":options.scrollCollapse,
-							"language":options.language,
-                            "dom": options.dom+'<"microscopyright">'
-                        });
-						$("div.microscopyright").html('版权所有&copy; Micros');
-					});
+				  //generate table
+				  var tablehtml ='';
+				  switch (options.gridtype){
+					case "table":
+				      tablehtml ='<table id="'+options.tableid+'" class="table table-striped table-bordered table-hover" style="table-layout:fixed" cellspacing="0"></table>';
+					break;
+					case "desc":
+					  tablehtml ='<table id="'+options.tableid+'" class="table table-hover" style="table-layout:fixed" cellspacing="0"></table>';
+					break;
+					case "pic":
+					  tablehtml ='<table id="'+options.tableid+'" class="table table-striped table-bordered table-hover" style="table-layout:fixed" cellspacing="0"></table>';
+					break;
+					}
+				  tablepicker.html(tablehtml);
+				  var curtableElement=$('#'+options.tableid);
+				  switch (options.gridtype){
+					case "table":
+					  curtableElement.DataTable({
+					    "ajax":{"url":options.url},
+						"processing":options.processing,
+						"columns":options.columns,
+						"columnDefs":options.columnDefs,
+						"serverSide": options.serverSide,
+						"ordering": options.ordering,
+						"aLengthMenu":options.aLengthMenu,
+						"scrollY": options.scrollY,//同时开启垂直(表格高度)和水平滚动条
+						"scrollX":options.scrollX,
+						"sScrollXInner":options.sScrollXInner,
+						"scrollCollapse":options.scrollCollapse,
+						"language":options.language,
+						"dom": options.dom+'<"microscopyright">'
+					  });
+					break;
+					case "desc":
+					  curtableElement.DataTable({
+						"data":options.data,
+						"processing":options.processing,
+						"columns":options.columns,
+					    "columnDefs":options.columnDefs,
+						"serverSide": options.serverSide,
+						"ordering": options.ordering,
+						"aLengthMenu":options.aLengthMenu,
+						"scrollY": options.scrollY,//同时开启垂直(表格高度)和水平滚动条
+						"scrollX":options.scrollX,
+						"sScrollXInner":options.sScrollXInner,
+						"scrollCollapse":options.scrollCollapse,
+						"language":options.language,
+						"dom": options.dom+'<"microscopyright">'
+					  });
+					  $("#micros_wrapper").find(".dataTables_scrollHead").addClass("hide");//隐藏表头
+					break;
+				  }
+				  $("div.microscopyright").html('版权所有&copy; Micros');
+				});
 				tablepicker.on('click.micros','td',function() {//表格单元格单击时
 					var $this = $(this);
 					var table= $('#'+options.tableid).DataTable();
 					var $row = table.row($this.closest('tr'));
 					var $data = $row.data();
-					if (options.maintableid!=='' && options.maintablecols.length>0 && options.curtablecols.length>0){//将点击的值导入到主表中
+					if (/*options.maintableid!=='' && */options.maintablecols.length>0 && options.curtablecols.length>0){//将点击的值导入到主表中
 						for (var i=0;i<options.maintablecols.length;i++){
-							var maintable=$(options.maintableid).DataTable();
-							maintable.cell(options.maintablerowindex,maintable.column(options.maintablecols[i]+":name")).data($data[options.curtablecols[i]]);
+							//var maintable=$(options.maintableid).DataTable();
+                            options.maintable.cell(options.maintablerowindex,options.maintable.column(options.maintablecols[i]+":name")).data($data[options.curtablecols[i]]);
 						}
 					}
+                    input.val($data[options.inputcol]);//赋值给input元素
 					if( $this.hasClass('micros_disabled') )
 						return false;
-					input.val($this.text());//赋值给input元素
 					if( (options.closeOnDataSelect===true|| options.closeOnDataSelect===0 )&&!options.inline ) {
 						combotable.trigger('close.micros').remove();
 					}
