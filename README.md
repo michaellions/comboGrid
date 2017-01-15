@@ -14,7 +14,7 @@
         var put=$('<input type="text" style="width:100%;" value="'+celldata+'"/>');
         $(e.target).html(put);
         $("input[type=text]").comboGrid({
-          maintableid:'#jjg-table',
+          maintable:jjgtable,
           maintablecols:['wqgj','wqgjj','wqgdql','nqgjj','nqgdql','gqs','gqzj','jcj'],
           curtablecols:['wqgj','wqgjj','wqgdql','nqgjj','nqgdql','gqs','gqzj','jcj'],
           maintablerowindex:rowindex,
